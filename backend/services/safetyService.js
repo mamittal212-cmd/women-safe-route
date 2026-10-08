@@ -48,4 +48,4 @@ function calculateSafety(
 
 module.exports = {
   calculateSafety,
-};
+}; 

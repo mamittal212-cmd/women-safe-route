@@ -51,55 +51,62 @@ async function calculateRoutes(req, res) {
     }
 
     // Get routes from OSRM
-    const routes = await getRoutes(
-      start,
-      destination
-    );
+    const routes =
+      await getRoutes(
+        start,
+        destination
+      );
 
     // Calculate safety information
     // for every route
-    const formattedRoutes = routes.map(
-      (route, index) => {
-        const safetyData =
-          calculateSafety(
-            route,
-            routes
-          );
+    const formattedRoutes = [];
 
-        return {
-          id: index + 1,
+    for (
+      let index = 0;
+      index < routes.length;
+      index++
+    ) {
+      const route = routes[index];
 
-          distance:
-            route.distance,
+      const safetyData =
+        calculateSafety(
+          route,
+          routes
+        );
 
-          duration:
-            route.duration,
+      formattedRoutes.push({
+        id: index + 1,
 
-          geometry:
-            route.geometry,
+        distance:
+          route.distance,
 
-          // Overall safety score
-          safetyScore:
-            safetyData.safetyScore,
+        duration:
+          route.duration,
 
-          // Safety data coverage
-          safetyConfidence:
-            safetyData.confidence,
+        geometry:
+          route.geometry,
 
-          // Individual factor scores
-          safetyBreakdown:
-            safetyData.factors,
+        // Overall safety score
+        safetyScore:
+          safetyData.safetyScore,
 
-          // Factor explanations
-          safetyFactorDetails:
-            safetyData.factorDetails,
+        // Safety data coverage
+        safetyConfidence:
+          safetyData.confidence,
 
-          // Route characteristics
-          routeContext:
-            safetyData.routeContext,
-        };
-      }
-    );
+        // Individual safety factors
+        safetyBreakdown:
+          safetyData.factors,
+
+        // Explanation for each factor
+        safetyFactorDetails:
+          safetyData.factorDetails,
+
+        // Route characteristics
+        routeContext:
+          safetyData.routeContext,
+      });
+    }
 
     // Highest safety score first
     formattedRoutes.sort(
