@@ -3,6 +3,10 @@ const {
 } = require("./safety/factorService");
 
 const {
+  calculateRouteContext,
+} = require("./safety/routeContextService");
+
+const {
   buildSafetyResult,
 } = require("./safety/scoringService");
 
@@ -14,17 +18,28 @@ function calculateSafety(
   route,
   allRoutes
 ) {
-  const factors =
-    calculateRouteFactors(
+  const routeContext =
+    calculateRouteContext(
       route,
       allRoutes
     );
 
+  const factors =
+    calculateRouteFactors(
+      route,
+      allRoutes,
+      routeContext
+    );
+
   const safetyResult =
-    buildSafetyResult(factors);
+    buildSafetyResult(
+      factors
+    );
 
   return {
     ...safetyResult,
+
+    routeContext,
 
     factorDetails:
       SAFETY_FACTORS,

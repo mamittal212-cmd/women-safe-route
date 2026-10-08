@@ -39,10 +39,10 @@ function calculateRelativeScore(
   );
 }
 
-
 function calculateRouteFactors(
   route,
-  allRoutes
+  allRoutes,
+  routeContext
 ) {
   const distances = allRoutes.map(
     (item) => item.distance
@@ -53,23 +53,14 @@ function calculateRouteFactors(
   );
 
   /*
-   * V2 FOUNDATION
+   * V2 ROUTE-DEPENDENT FACTORS
    *
-   * These baseline values are temporary.
-   * They are intentionally separated from
-   * the scoring engine so real data sources
-   * can replace them later.
+   * These factors are based only on
+   * observable routing characteristics.
+   *
+   * No crime or real-world safety claims
+   * are being made at this stage.
    */
-
-  const roadSafety = 85;
-
-  const accessibility = 80;
-
-  const isolation = 75;
-
-  const emergencyAccess = 80;
-
-  const reliability = 85;
 
   const routeLength =
     calculateRelativeScore(
@@ -83,6 +74,74 @@ function calculateRouteFactors(
       durations
     );
 
+  /*
+   * Accessibility
+   *
+   * Temporary route-dependent estimate.
+   *
+   * Routes closer to the fastest route
+   * receive a slightly higher accessibility
+   * score because they generally represent
+   * more direct routing.
+   */
+
+  const accessibility = Math.round(
+    70 +
+      (1 -
+        routeContext.relativeDistance) *
+        20
+  );
+
+  /*
+   * Reliability
+   *
+   * Routes with shorter travel times
+   * receive a slightly higher baseline
+   * reliability score.
+   */
+
+  const reliability = Math.round(
+    70 +
+      (1 -
+        routeContext.relativeDuration) *
+        20
+  );
+
+  /*
+   * Road Safety
+   *
+   * No real road-safety dataset is connected
+   * yet. Keep this conservative and clearly
+   * separate from future geographic data.
+   */
+
+  const roadSafety = Math.round(
+    75 +
+      (1 -
+        routeContext.relativeDistance) *
+        10
+  );
+
+  /*
+   * Isolation
+   *
+   * We currently don't have population,
+   * pedestrian, lighting, or land-use data.
+   *
+   * Therefore this remains a baseline value.
+   */
+
+  const isolation = 75;
+
+  /*
+   * Emergency Access
+   *
+   * Real emergency-facility data will be
+   * connected in a later V2 stage.
+   */
+
+  const emergencyAccess = 80;
+
   return {
     roadSafety,
     accessibility,
@@ -93,7 +152,6 @@ function calculateRouteFactors(
     reliability,
   };
 }
-
 
 module.exports = {
   calculateRouteFactors,

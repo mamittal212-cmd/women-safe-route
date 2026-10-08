@@ -50,7 +50,7 @@ async function calculateRoutes(req, res) {
       });
     }
 
-    // Get routes from routing service
+    // Get routes from OSRM
     const routes = await getRoutes(
       start,
       destination
@@ -69,35 +69,39 @@ async function calculateRoutes(req, res) {
         return {
           id: index + 1,
 
-          distance: route.distance,
+          distance:
+            route.distance,
 
-          duration: route.duration,
+          duration:
+            route.duration,
 
-          geometry: route.geometry,
+          geometry:
+            route.geometry,
 
           // Overall safety score
           safetyScore:
             safetyData.safetyScore,
 
-          // Percentage of safety data
-          // currently backed by real data
+          // Safety data coverage
           safetyConfidence:
             safetyData.confidence,
 
-          // Individual safety factor scores
+          // Individual factor scores
           safetyBreakdown:
             safetyData.factors,
 
-          // Explanation/details for
-          // every safety factor
+          // Factor explanations
           safetyFactorDetails:
             safetyData.factorDetails,
+
+          // Route characteristics
+          routeContext:
+            safetyData.routeContext,
         };
       }
     );
 
-    // Sort routes by safety score
-    // Highest score first
+    // Highest safety score first
     formattedRoutes.sort(
       (a, b) =>
         b.safetyScore -
