@@ -14,9 +14,11 @@ const {
   SAFETY_FACTORS,
 } = require("./safety/safetyConfig");
 
+
 function calculateSafety(
   route,
-  allRoutes
+  allRoutes,
+  geographicContext = null
 ) {
   const routeContext =
     calculateRouteContext(
@@ -24,17 +26,21 @@ function calculateSafety(
       allRoutes
     );
 
+
   const factors =
     calculateRouteFactors(
       route,
       allRoutes,
-      routeContext
+      routeContext,
+      geographicContext
     );
+
 
   const safetyResult =
     buildSafetyResult(
       factors
     );
+
 
   return {
     ...safetyResult,
@@ -43,9 +49,39 @@ function calculateSafety(
 
     factorDetails:
       SAFETY_FACTORS,
+
+    geographicContext:
+      geographicContext
+        ? {
+            available:
+              geographicContext.available,
+
+            status:
+              geographicContext.status,
+
+            source:
+              geographicContext.source,
+
+            samplePoints:
+              geographicContext.samplePoints,
+
+            roadSummary:
+              geographicContext.roadSummary,
+
+            cache:
+              geographicContext.cache,
+          }
+        : {
+            available: false,
+            status:
+              "not_cached",
+            source:
+              "openstreetmap-overpass",
+          },
   };
 }
 
+
 module.exports = {
   calculateSafety,
-}; 
+};

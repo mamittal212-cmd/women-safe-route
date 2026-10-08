@@ -419,10 +419,10 @@ async function getGeographicContext(
 
     return result;
   } catch (error) {
-    console.warn(
-      "Geographic context unavailable:",
-      error.message
-    );
+    console.info(
+  "Geographic enrichment skipped:",
+  error.message
+);
 
     const result =
       getUnavailableContext(
@@ -450,6 +450,59 @@ async function getGeographicContext(
   }
 }
 
+function getCachedGeographicContext(route) {
+  if (!route?.geometry) {
+    return null;
+  }
+
+  const coordinates =
+    sampleRouteCoordinates(
+      route.geometry
+    );
+
+  if (!coordinates.length) {
+    return null;
+  }
+
+  const cacheKey =
+    createCacheKey(
+      coordinates
+    );
+
+  const cached =
+    geographicCache.get(
+      cacheKey
+    );
+
+  if (!cached) {
+    return null;
+  }
+
+  const age =
+    Date.now() -
+    cached.timestamp;
+
+  if (
+    age >= cached.ttl
+  ) {
+    geographicCache.delete(
+      cacheKey
+    );
+   
+    return null;
+  }
+  
+  return {
+    ...cached.data,
+    cache: {
+      hit: true,
+      ageMs: age,
+    },
+  };
+}
+
+
 module.exports = {
   getGeographicContext,
+  getCachedGeographicContext,
 };

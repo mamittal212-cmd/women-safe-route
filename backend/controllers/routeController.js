@@ -1,10 +1,41 @@
-const { getRoutes } = require("../services/routingService");
+const {
+  getRoutes,
+} = require("../services/routingService");
 
 const {
   calculateSafety,
 } = require("../services/safetyService");
 
-async function calculateRoutes(req, res) {
+const {
+  getGeographicContext,
+  getCachedGeographicContext,
+} = require("../services/safety/geographicContextService");
+
+
+async function warmGeographicContext(
+  routes
+) {
+  for (
+    const route of routes
+  ) {
+    try {
+      await getGeographicContext(
+        route
+      );
+    } catch (error) {
+      console.warn(
+        "Background geographic enrichment failed:",
+        error.message
+      );
+    }
+  }
+}
+
+
+async function calculateRoutes(
+  req,
+  res
+) {
   try {
     const {
       startLat,
@@ -13,7 +44,7 @@ async function calculateRoutes(req, res) {
       destinationLng,
     } = req.query;
 
-    // Validate coordinates
+
     if (
       !startLat ||
       !startLng ||
@@ -26,23 +57,38 @@ async function calculateRoutes(req, res) {
       });
     }
 
-    // Convert coordinates to numbers
+
     const start = {
-      latitude: Number(startLat),
-      longitude: Number(startLng),
+      latitude:
+        Number(startLat),
+
+      longitude:
+        Number(startLng),
     };
+
 
     const destination = {
-      latitude: Number(destinationLat),
-      longitude: Number(destinationLng),
+      latitude:
+        Number(destinationLat),
+
+      longitude:
+        Number(destinationLng),
     };
 
-    // Validate converted coordinates
+
     if (
-      Number.isNaN(start.latitude) ||
-      Number.isNaN(start.longitude) ||
-      Number.isNaN(destination.latitude) ||
-      Number.isNaN(destination.longitude)
+      Number.isNaN(
+        start.latitude
+      ) ||
+      Number.isNaN(
+        start.longitude
+      ) ||
+      Number.isNaN(
+        destination.latitude
+      ) ||
+      Number.isNaN(
+        destination.longitude
+      )
     ) {
       return res.status(400).json({
         message:
@@ -50,32 +96,56 @@ async function calculateRoutes(req, res) {
       });
     }
 
-    // Get routes from OSRM
+
+    /*
+     * Critical route calculation.
+     *
+     * This does NOT wait for Overpass.
+     */
     const routes =
       await getRoutes(
         start,
         destination
       );
 
-    // Calculate safety information
-    // for every route
-    const formattedRoutes = [];
+
+    const formattedRoutes =
+      [];
+
 
     for (
       let index = 0;
       index < routes.length;
       index++
     ) {
-      const route = routes[index];
+      const route =
+        routes[index];
+
+
+      /*
+       * Only read geographic data
+       * from the existing cache.
+       *
+       * This operation never calls
+       * Overpass.
+       */
+      const geographicContext =
+        getCachedGeographicContext(
+          route
+        );
+
 
       const safetyData =
         calculateSafety(
           route,
-          routes
+          routes,
+          geographicContext
         );
 
+
       formattedRoutes.push({
-        id: index + 1,
+        id:
+          index + 1,
 
         distance:
           route.distance,
@@ -86,50 +156,90 @@ async function calculateRoutes(req, res) {
         geometry:
           route.geometry,
 
-        // Overall safety score
         safetyScore:
           safetyData.safetyScore,
 
-        // Safety data coverage
         safetyConfidence:
           safetyData.confidence,
 
-        // Individual safety factors
         safetyBreakdown:
           safetyData.factors,
 
-        // Explanation for each factor
         safetyFactorDetails:
           safetyData.factorDetails,
 
-        // Route characteristics
         routeContext:
           safetyData.routeContext,
+
+        geographicContext:
+          safetyData.geographicContext,
       });
     }
 
-    // Highest safety score first
+
+    /*
+     * Safest routes first.
+     */
     formattedRoutes.sort(
       (a, b) =>
         b.safetyScore -
         a.safetyScore
     );
 
+
+    /*
+     * Send the route response immediately.
+     *
+     * Geographic enrichment happens AFTER
+     * the response and therefore cannot block
+     * the critical route calculation.
+     */
     res.json({
-      routes: formattedRoutes,
+      routes:
+        formattedRoutes,
     });
+
+
+    /*
+     * Background geographic enrichment.
+     *
+     * This runs sequentially rather than in
+     * parallel to respect public Overpass
+     * usage guidance.
+     */
+    setImmediate(() => {
+      warmGeographicContext(
+        routes
+      ).catch(
+        (error) => {
+          console.warn(
+            "Background geographic enrichment error:",
+            error.message
+          );
+        }
+      );
+    });
+
   } catch (error) {
     console.error(
       "Routing error:",
       error
     );
 
-    res.status(500).json({
-      message:
-        "Unable to calculate routes.",
-    });
+
+    /*
+     * Only send a response if one hasn't
+     * already been sent.
+     */
+    if (!res.headersSent) {
+      res.status(500).json({
+        message:
+          "Unable to calculate routes.",
+      });
+    }
   }
 }
+
 
 module.exports = {
   calculateRoutes,
