@@ -3,7 +3,18 @@ const OVERPASS_URL =
 
 const SAMPLE_LIMIT = 20;
 const SEARCH_RADIUS = 15;
+
 const OVERPASS_TIMEOUT = 5000;
+
+// Successful geographic results stay cached
+// for 10 minutes.
+const CACHE_TTL = 10 * 60 * 1000;
+
+// Failed requests stay cached briefly so we
+// don't repeatedly hit an unavailable service.
+const FAILURE_CACHE_TTL = 60 * 1000;
+
+const geographicCache = new Map();
 
 function sampleRouteCoordinates(geometry) {
   if (
@@ -13,9 +24,12 @@ function sampleRouteCoordinates(geometry) {
     return [];
   }
 
-  const coordinates = geometry.coordinates;
+  const coordinates =
+    geometry.coordinates;
 
-  if (coordinates.length <= SAMPLE_LIMIT) {
+  if (
+    coordinates.length <= SAMPLE_LIMIT
+  ) {
     return coordinates;
   }
 
@@ -30,21 +44,41 @@ function sampleRouteCoordinates(geometry) {
     i < SAMPLE_LIMIT;
     i++
   ) {
-    const index = Math.round(i * step);
+    const index = Math.round(
+      i * step
+    );
 
-    samples.push(coordinates[index]);
+    samples.push(
+      coordinates[index]
+    );
   }
 
   return samples;
 }
 
-function buildOverpassQuery(coordinates) {
-  const lineString = coordinates
+function createCacheKey(
+  coordinates
+) {
+  return coordinates
     .map(
       ([longitude, latitude]) =>
-        `${latitude},${longitude}`
+        `${longitude.toFixed(
+          4
+        )},${latitude.toFixed(4)}`
     )
-    .join(",");
+    .join("|");
+}
+
+function buildOverpassQuery(
+  coordinates
+) {
+  const lineString =
+    coordinates
+      .map(
+        ([longitude, latitude]) =>
+          `${latitude},${longitude}`
+      )
+      .join(",");
 
   return `
 [out:json][timeout:5];
@@ -57,34 +91,42 @@ out tags;
 `;
 }
 
-async function queryOverpass(query) {
+async function queryOverpass(
+  query
+) {
   const controller =
     new AbortController();
 
-  const timeout = setTimeout(() => {
-    controller.abort();
-  }, OVERPASS_TIMEOUT);
+  const timeout = setTimeout(
+    () => {
+      controller.abort();
+    },
+    OVERPASS_TIMEOUT
+  );
 
   try {
-    const response = await fetch(
-      OVERPASS_URL,
-      {
-        method: "POST",
+    const response =
+      await fetch(
+        OVERPASS_URL,
+        {
+          method: "POST",
 
-        headers: {
-          "Content-Type":
-            "application/x-www-form-urlencoded",
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded",
 
-          "User-Agent":
-            "SafeRoute/2.1",
-        },
+            "User-Agent":
+              "SafeRoute/2.1",
+          },
 
-        body:
-          `data=${encodeURIComponent(query)}`,
+          body:
+            `data=${encodeURIComponent(
+              query
+            )}`,
 
-        signal: controller.signal,
-      }
-    );
+          signal: controller.signal,
+        }
+      );
 
     if (!response.ok) {
       throw new Error(
@@ -94,7 +136,10 @@ async function queryOverpass(query) {
 
     return await response.json();
   } catch (error) {
-    if (error.name === "AbortError") {
+    if (
+      error.name ===
+      "AbortError"
+    ) {
       throw new Error(
         "Overpass request timed out."
       );
@@ -106,7 +151,9 @@ async function queryOverpass(query) {
   }
 }
 
-function classifyRoadType(highway) {
+function classifyRoadType(
+  highway
+) {
   if (!highway) {
     return "unknown";
   }
@@ -134,22 +181,36 @@ function classifyRoadType(highway) {
     "unclassified",
   ];
 
-  if (majorRoads.includes(highway)) {
+  if (
+    majorRoads.includes(
+      highway
+    )
+  ) {
     return "major";
   }
 
-  if (secondaryRoads.includes(highway)) {
+  if (
+    secondaryRoads.includes(
+      highway
+    )
+  ) {
     return "secondary";
   }
 
-  if (localRoads.includes(highway)) {
+  if (
+    localRoads.includes(
+      highway
+    )
+  ) {
     return "local";
   }
 
   return "other";
 }
 
-function buildRoadSummary(elements) {
+function buildRoadSummary(
+  elements
+) {
   const roadTypes = {
     major: 0,
     secondary: 0,
@@ -160,25 +221,32 @@ function buildRoadSummary(elements) {
 
   const highwayTypes = {};
 
-  elements.forEach((element) => {
-    const highway =
-      element.tags?.highway;
+  elements.forEach(
+    (element) => {
+      const highway =
+        element.tags?.highway;
 
-    if (!highway) {
-      return;
+      if (!highway) {
+        return;
+      }
+
+      highwayTypes[highway] =
+        (highwayTypes[highway] ||
+          0) +
+        1;
+
+      const category =
+        classifyRoadType(
+          highway
+        );
+
+      roadTypes[category]++;
     }
-
-    highwayTypes[highway] =
-      (highwayTypes[highway] || 0) + 1;
-
-    const category =
-      classifyRoadType(highway);
-
-    roadTypes[category]++;
-  });
+  );
 
   return {
-    totalRoads: elements.length,
+    totalRoads:
+      elements.length,
 
     roadTypes,
 
@@ -217,17 +285,38 @@ function getEmptyRoadSummary() {
   };
 }
 
-async function getGeographicContext(route) {
+function getUnavailableContext(
+  reason,
+  samplePoints = 0
+) {
+  return {
+    available: false,
+
+    source:
+      "openstreetmap-overpass",
+
+    status:
+      "temporarily_unavailable",
+
+    reason,
+
+    samplePoints,
+
+    searchRadius:
+      SEARCH_RADIUS,
+
+    roadSummary:
+      getEmptyRoadSummary(),
+  };
+}
+
+async function getGeographicContext(
+  route
+) {
   if (!route?.geometry) {
-    return {
-      available: false,
-
-      reason:
-        "Route geometry is unavailable.",
-
-      roadSummary:
-        getEmptyRoadSummary(),
-    };
+    return getUnavailableContext(
+      "Route geometry is unavailable."
+    );
   }
 
   const coordinates =
@@ -236,15 +325,43 @@ async function getGeographicContext(route) {
     );
 
   if (!coordinates.length) {
-    return {
-      available: false,
+    return getUnavailableContext(
+      "No route coordinates available."
+    );
+  }
 
-      reason:
-        "No route coordinates available.",
+  const cacheKey =
+    createCacheKey(
+      coordinates
+    );
 
-      roadSummary:
-        getEmptyRoadSummary(),
-    };
+  const cached =
+    geographicCache.get(
+      cacheKey
+    );
+
+  if (cached) {
+    const age =
+      Date.now() -
+      cached.timestamp;
+
+    if (
+      age <
+      cached.ttl
+    ) {
+      return {
+        ...cached.data,
+
+        cache: {
+          hit: true,
+          ageMs: age,
+        },
+      };
+    }
+
+    geographicCache.delete(
+      cacheKey
+    );
   }
 
   try {
@@ -254,18 +371,29 @@ async function getGeographicContext(route) {
       );
 
     const data =
-      await queryOverpass(query);
+      await queryOverpass(
+        query
+      );
 
     const elements =
-      Array.isArray(data.elements)
+      Array.isArray(
+        data.elements
+      )
         ? data.elements
         : [];
 
     const roadSummary =
-      buildRoadSummary(elements);
+      buildRoadSummary(
+        elements
+      );
 
-    return {
+    const result = {
       available: true,
+
+      source:
+        "openstreetmap-overpass",
+
+      status: "available",
 
       samplePoints:
         coordinates.length,
@@ -274,26 +402,50 @@ async function getGeographicContext(route) {
         SEARCH_RADIUS,
 
       roadSummary,
+
+      cache: {
+        hit: false,
+      },
     };
+
+    geographicCache.set(
+      cacheKey,
+      {
+        data: result,
+        timestamp: Date.now(),
+        ttl: CACHE_TTL,
+      }
+    );
+
+    return result;
   } catch (error) {
     console.warn(
       "Geographic context unavailable:",
       error.message
     );
 
+    const result =
+      getUnavailableContext(
+        error.message,
+        coordinates.length
+      );
+
+    geographicCache.set(
+      cacheKey,
+      {
+        data: result,
+        timestamp: Date.now(),
+        ttl:
+          FAILURE_CACHE_TTL,
+      }
+    );
+
     return {
-      available: false,
+      ...result,
 
-      reason: error.message,
-
-      samplePoints:
-        coordinates.length,
-
-      searchRadius:
-        SEARCH_RADIUS,
-
-      roadSummary:
-        getEmptyRoadSummary(),
+      cache: {
+        hit: false,
+      },
     };
   }
 }

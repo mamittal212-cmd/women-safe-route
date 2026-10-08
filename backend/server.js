@@ -1,5 +1,6 @@
 const geocodeRoutes = require("./routes/geocodeRoutes");
 const routeRoutes = require("./routes/routeRoutes");
+const geographicContextRoutes = require("./routes/geographicContextRoutes");
 const express = require("express");
 const cors = require("cors");
 
@@ -10,6 +11,10 @@ app.use(cors());
 app.use(express.json());
 app.use("/api/geocode", geocodeRoutes);
 app.use("/api/routes", routeRoutes);
+app.use(
+  "/api/geographic-context",
+  geographicContextRoutes
+);
 
 app.get("/", (req, res) => {
   res.json({
