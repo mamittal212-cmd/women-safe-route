@@ -15,7 +15,8 @@ function calculateSafetyScore(
     SAFETY_WEIGHTS
   )) {
     score +=
-      factors[factor] * weight;
+      factors[factor] *
+      weight;
   }
 
   return Math.round(score);
@@ -25,31 +26,32 @@ function calculateSafetyScore(
 function calculateConfidence(
   factors
 ) {
-  /*
-   * V2 currently has baseline data only.
-   *
-   * This is NOT a measurement of real-world
-   * data quality yet.
-   *
-   * It represents how much of the future
-   * safety model is currently backed by
-   * actual factor data.
-   */
+  const realDataFactors = [
+    "routeLength",
+    "routeTime",
+    "reliability",
+  ];
 
-  const realDataFactors = 0;
+  const availableRealData =
+    realDataFactors.filter(
+      (factor) =>
+        typeof factors[factor] ===
+        "number"
+    ).length;
 
   const totalFactors =
-    Object.keys(factors).length;
+    Object.keys(
+      SAFETY_WEIGHTS
+    ).length;
 
-  const confidence =
-    totalFactors === 0
-      ? 0
-      : (realDataFactors /
-          totalFactors) *
-        100;
+  if (!totalFactors) {
+    return 0;
+  }
 
   return Math.round(
-    confidence
+    (availableRealData /
+      totalFactors) *
+      100
   );
 }
 

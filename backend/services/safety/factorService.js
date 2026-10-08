@@ -1,3 +1,25 @@
+const {
+  calculateGeographicRoadSafety,
+  calculateGeographicAccessibility,
+  calculateGeographicEmergencyAccess,
+} = require("./geographicFactorService");
+
+
+function clampScore(score) {
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      Math.round(score)
+    )
+  );
+}
+
+
+/*
+ * Calculates a relative score by comparing
+ * the current route with all available routes.
+ */
 function calculateRelativeScore(
   value,
   values,
@@ -10,7 +32,6 @@ function calculateRelativeScore(
   const min = Math.min(...values);
   const max = Math.max(...values);
 
-  // All routes have the same value
   if (max === min) {
     return 80;
   }
@@ -30,38 +51,96 @@ function calculateRelativeScore(
         30;
   }
 
-  return Math.max(
-    0,
-    Math.min(
-      100,
-      Math.round(normalized)
-    )
-  );
+  return clampScore(normalized);
 }
 
+
+/*
+ * Prototype baseline for Road Safety.
+ *
+ * This is NOT crime data or real-world
+ * road-risk data.
+ */
+function calculateRoadSafety() {
+  return 75;
+}
+
+
+/*
+ * Prototype baseline for Accessibility.
+ */
+function calculateAccessibility() {
+  return 75;
+}
+
+
+/*
+ * Prototype baseline for Isolation.
+ */
+function calculateIsolation() {
+  return 70;
+}
+
+
+/*
+ * Prototype baseline for Emergency Access.
+ */
+function calculateEmergencyAccess() {
+  return 75;
+}
+
+
+/*
+ * Route Reliability is based on actual
+ * routing information.
+ */
+function calculateReliability(
+  routeContext
+) {
+  const distanceScore =
+    1 -
+    routeContext.relativeDistance;
+
+  const durationScore =
+    1 -
+    routeContext.relativeDuration;
+
+  const score =
+    65 +
+    distanceScore * 15 +
+    durationScore * 20;
+
+  return clampScore(score);
+}
+
+
+/*
+ * Main safety-factor calculation.
+ *
+ * geographicContext is optional.
+ */
 function calculateRouteFactors(
   route,
   allRoutes,
-  routeContext
+  routeContext,
+  geographicContext = null
 ) {
-  const distances = allRoutes.map(
-    (item) => item.distance
-  );
+  const distances =
+    allRoutes.map(
+      (item) =>
+        item.distance
+    );
 
-  const durations = allRoutes.map(
-    (item) => item.duration
-  );
+  const durations =
+    allRoutes.map(
+      (item) =>
+        item.duration
+    );
+
 
   /*
-   * V2 ROUTE-DEPENDENT FACTORS
-   *
-   * These factors are based only on
-   * observable routing characteristics.
-   *
-   * No crime or real-world safety claims
-   * are being made at this stage.
+   * Route efficiency factors.
    */
-
   const routeLength =
     calculateRelativeScore(
       route.distance,
@@ -74,74 +153,80 @@ function calculateRouteFactors(
       durations
     );
 
-  /*
-   * Accessibility
-   *
-   * Temporary route-dependent estimate.
-   *
-   * Routes closer to the fastest route
-   * receive a slightly higher accessibility
-   * score because they generally represent
-   * more direct routing.
-   */
-
-  const accessibility = Math.round(
-    70 +
-      (1 -
-        routeContext.relativeDistance) *
-        20
-  );
 
   /*
-   * Reliability
-   *
-   * Routes with shorter travel times
-   * receive a slightly higher baseline
-   * reliability score.
+   * Prototype baselines.
    */
+  const roadSafetyBaseline =
+    calculateRoadSafety();
 
-  const reliability = Math.round(
-    70 +
-      (1 -
-        routeContext.relativeDuration) *
-        20
-  );
+  const accessibilityBaseline =
+    calculateAccessibility();
+
+  const emergencyAccessBaseline =
+    calculateEmergencyAccess();
+
 
   /*
-   * Road Safety
-   *
-   * No real road-safety dataset is connected
-   * yet. Keep this conservative and clearly
-   * separate from future geographic data.
+   * Geographic context can adjust
+   * the prototype baselines.
    */
+  const roadSafetyResult =
+    calculateGeographicRoadSafety(
+      roadSafetyBaseline,
+      geographicContext
+    );
 
-  const roadSafety = Math.round(
-    75 +
-      (1 -
-        routeContext.relativeDistance) *
-        10
-  );
+  const accessibilityResult =
+    calculateGeographicAccessibility(
+      accessibilityBaseline,
+      geographicContext
+    );
+
+  const emergencyAccessResult =
+    calculateGeographicEmergencyAccess(
+      emergencyAccessBaseline,
+      geographicContext
+    );
+
+
+  const roadSafety =
+    roadSafetyResult.score;
+
+  const accessibility =
+    accessibilityResult.score;
+
+  const emergencyAccess =
+    emergencyAccessResult.score;
+
 
   /*
-   * Isolation
-   *
-   * We currently don't have population,
-   * pedestrian, lighting, or land-use data.
-   *
-   * Therefore this remains a baseline value.
+   * Isolation remains a prototype baseline
+   * until meaningful geographic/population
+   * data is available.
    */
+  const isolation =
+    calculateIsolation();
 
-  const isolation = 75;
 
   /*
-   * Emergency Access
-   *
-   * Real emergency-facility data will be
-   * connected in a later V2 stage.
+   * Reliability uses actual route
+   * comparison data.
    */
+  const reliability =
+    calculateReliability(
+      routeContext
+    );
 
-  const emergencyAccess = 80;
 
+  /*
+   * IMPORTANT:
+   * Return ONLY numeric safety factors here.
+   *
+   * Do NOT put geographicContext inside
+   * this object because the scoring/frontend
+   * expects every factor to be a number.
+   */
   return {
     roadSafety,
     accessibility,
@@ -152,6 +237,7 @@ function calculateRouteFactors(
     reliability,
   };
 }
+
 
 module.exports = {
   calculateRouteFactors,

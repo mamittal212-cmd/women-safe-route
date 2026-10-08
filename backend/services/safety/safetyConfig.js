@@ -8,49 +8,79 @@ const SAFETY_WEIGHTS = {
   reliability: 0.15,
 };
 
+
 const SAFETY_FACTORS = {
   roadSafety: {
     label: "Road Safety",
     description:
-      "Estimated quality and suitability of the roads used by the route.",
+      "Prototype baseline. Real road-risk information will be introduced through geographic and safety datasets.",
+    dataSource:
+      "prototype-baseline",
+    status:
+      "prototype",
   },
 
   accessibility: {
     label: "Accessibility",
     description:
-      "Estimated accessibility of the route for normal road users.",
+      "Prototype baseline. Future versions will consider road classification, pedestrian infrastructure and accessibility data.",
+    dataSource:
+      "prototype-baseline",
+    status:
+      "prototype",
   },
 
   routeLength: {
     label: "Route Length",
     description:
-      "Relative distance compared with the available routes.",
+      "Compares this route's distance with the available alternatives.",
+    dataSource:
+      "routing-data",
+    status:
+      "calculated",
   },
 
   routeTime: {
     label: "Travel Time",
     description:
-      "Relative travel time compared with the available routes.",
+      "Compares this route's estimated travel time with the available alternatives.",
+    dataSource:
+      "routing-data",
+    status:
+      "calculated",
   },
 
   isolation: {
     label: "Isolation",
     description:
-      "Estimated level of route isolation.",
+      "Prototype baseline. Future versions will consider population density, pedestrian activity, land use and lighting.",
+    dataSource:
+      "prototype-baseline",
+    status:
+      "prototype",
   },
 
   emergencyAccess: {
     label: "Emergency Access",
     description:
-      "Estimated accessibility for emergency assistance.",
+      "Prototype baseline. Future versions will consider nearby emergency facilities and road accessibility.",
+    dataSource:
+      "prototype-baseline",
+    status:
+      "prototype",
   },
 
   reliability: {
     label: "Route Reliability",
     description:
-      "Estimated reliability of the route.",
+      "Estimates route reliability using relative distance and travel time.",
+    dataSource:
+      "routing-data",
+    status:
+      "calculated",
   },
 };
+
 
 module.exports = {
   SAFETY_WEIGHTS,
