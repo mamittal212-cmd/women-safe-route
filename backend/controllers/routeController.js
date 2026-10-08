@@ -1,6 +1,7 @@
 const { getRoutes } = require("../services/routingService");
+
 const {
-  calculateSafetyBreakdown,
+  calculateSafety,
 } = require("../services/safetyService");
 
 async function calculateRoutes(req, res) {
@@ -12,6 +13,7 @@ async function calculateRoutes(req, res) {
       destinationLng,
     } = req.query;
 
+    // Validate coordinates
     if (
       !startLat ||
       !startLng ||
@@ -24,6 +26,7 @@ async function calculateRoutes(req, res) {
       });
     }
 
+    // Convert coordinates to numbers
     const start = {
       latitude: Number(startLat),
       longitude: Number(startLng),
@@ -34,36 +37,85 @@ async function calculateRoutes(req, res) {
       longitude: Number(destinationLng),
     };
 
-    const routes = await getRoutes(start, destination);
+    // Validate converted coordinates
+    if (
+      Number.isNaN(start.latitude) ||
+      Number.isNaN(start.longitude) ||
+      Number.isNaN(destination.latitude) ||
+      Number.isNaN(destination.longitude)
+    ) {
+      return res.status(400).json({
+        message:
+          "Invalid start or destination coordinates.",
+      });
+    }
 
-    const formattedRoutes = routes.map((route, index) => {
-      const safetyData = calculateSafetyBreakdown(
-        route,
-        routes
-      );
+    // Get routes from routing service
+    const routes = await getRoutes(
+      start,
+      destination
+    );
 
-      return {
-        id: index + 1,
-        distance: route.distance,
-        duration: route.duration,
-        geometry: route.geometry,
-        safetyScore: safetyData.safetyScore,
-        safetyBreakdown: safetyData.safetyBreakdown,
-      };
-    });
+    // Calculate safety information
+    // for every route
+    const formattedRoutes = routes.map(
+      (route, index) => {
+        const safetyData =
+          calculateSafety(
+            route,
+            routes
+          );
 
+        return {
+          id: index + 1,
+
+          distance: route.distance,
+
+          duration: route.duration,
+
+          geometry: route.geometry,
+
+          // Overall safety score
+          safetyScore:
+            safetyData.safetyScore,
+
+          // Percentage of safety data
+          // currently backed by real data
+          safetyConfidence:
+            safetyData.confidence,
+
+          // Individual safety factor scores
+          safetyBreakdown:
+            safetyData.factors,
+
+          // Explanation/details for
+          // every safety factor
+          safetyFactorDetails:
+            safetyData.factorDetails,
+        };
+      }
+    );
+
+    // Sort routes by safety score
+    // Highest score first
     formattedRoutes.sort(
-      (a, b) => b.safetyScore - a.safetyScore
+      (a, b) =>
+        b.safetyScore -
+        a.safetyScore
     );
 
     res.json({
       routes: formattedRoutes,
     });
   } catch (error) {
-    console.error("Routing error:", error);
+    console.error(
+      "Routing error:",
+      error
+    );
 
     res.status(500).json({
-      message: "Unable to calculate routes.",
+      message:
+        "Unable to calculate routes.",
     });
   }
 }

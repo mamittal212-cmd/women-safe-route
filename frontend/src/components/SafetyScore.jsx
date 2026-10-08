@@ -7,15 +7,20 @@ function getScoreLabel(score) {
   return "Very Low Safety Score";
 }
 
-function SafetyScore({ score }) {
+function SafetyScore({
+  score,
+  confidence = 0,
+}) {
   return (
     <div className="safety-score">
+
       <div className="safety-score-value">
         <strong>{score}</strong>
         <span>/100</span>
       </div>
 
       <div className="safety-score-info">
+
         <span className="safety-score-label">
           🛡️ {getScoreLabel(score)}
         </span>
@@ -23,9 +28,31 @@ function SafetyScore({ score }) {
         <div className="safety-score-bar">
           <div
             className="safety-score-fill"
-            style={{ width: `${score}%` }}
+            style={{
+              width: `${score}%`,
+            }}
           ></div>
         </div>
+
+        <div className="safety-confidence">
+          <span>
+            Safety Data Coverage
+          </span>
+
+          <strong>
+            {confidence}%
+          </strong>
+        </div>
+
+        <div className="confidence-bar">
+          <div
+            className="confidence-fill"
+            style={{
+              width: `${confidence}%`,
+            }}
+          ></div>
+        </div>
+
       </div>
     </div>
   );

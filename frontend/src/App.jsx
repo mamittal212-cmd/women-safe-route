@@ -77,7 +77,7 @@ function App() {
   }
 
   function getBalancedRoute() {
-    if (routes.length === 0) return null;
+    if (routes.length === 0) return null; 
 
     const fastest = getFastestRoute();
     const safest = getSafestRoute();
@@ -385,10 +385,9 @@ function App() {
                     </div>
 
                     <SafetyScore
-                      score={
-                        route.safetyScore
-                      }
-                    />
+  score={route.safetyScore}
+  confidence={route.safetyConfidence}
+/>
 
                     <div className="route-stats">
 
@@ -415,10 +414,11 @@ function App() {
                     </div>
 
                     <SafetyBreakdown
-                      breakdown={
-                        route.safetyBreakdown
-                      }
-                    />
+  breakdown={route.safetyBreakdown}
+  factorDetails={
+    route.safetyFactorDetails
+  }
+/>
 
                   </div>
                 );
