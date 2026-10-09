@@ -227,7 +227,8 @@ function calculateRouteFactors(
    * this object because the scoring/frontend
    * expects every factor to be a number.
    */
-  return {
+return {
+  factors: {
     roadSafety,
     accessibility,
     routeLength,
@@ -235,7 +236,16 @@ function calculateRouteFactors(
     isolation,
     emergencyAccess,
     reliability,
-  };
+  },
+
+  geographicDetails: {
+    roadSafety: roadSafetyResult.context,
+    accessibility:
+      accessibilityResult.context,
+    emergencyAccess:
+      emergencyAccessResult.context,
+  },
+};
 }
 
 

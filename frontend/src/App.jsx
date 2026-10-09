@@ -388,6 +388,61 @@ function App() {
   score={route.safetyScore}
   confidence={route.safetyConfidence}
 />
+{route.geographicContext && (
+  <div className="geographic-context">
+    <div className="geographic-context-header">
+      <span>🌍 Geographic Context</span>
+
+      <span
+        className={
+          route.geographicContext.available
+            ? "context-status available"
+            : "context-status unavailable"
+        }
+      >
+        {route.geographicContext.available
+          ? "AVAILABLE"
+          : "UNAVAILABLE"}
+      </span>
+    </div>
+
+    {route.geographicContext.available ? (
+      <>
+        <p className="geographic-context-source">
+          Road characteristics from OpenStreetMap
+        </p>
+
+        <div className="road-context-grid">
+          <div>
+            <strong>
+              {route.geographicContext.roadSummary.roadTypes.major}
+            </strong>
+            <span>Major</span>
+          </div>
+
+          <div>
+            <strong>
+              {route.geographicContext.roadSummary.roadTypes.secondary}
+            </strong>
+            <span>Secondary</span>
+          </div>
+
+          <div>
+            <strong>
+              {route.geographicContext.roadSummary.roadTypes.local}
+            </strong>
+            <span>Local</span>
+          </div>
+        </div>
+      </>
+    ) : (
+      <p className="geographic-context-message">
+        Geographic road context is temporarily unavailable.
+        The route calculation does not depend on this data.
+      </p>
+    )}
+  </div>
+)}
 
                     <div className="route-stats">
 

@@ -15,6 +15,63 @@ const {
 } = require("./safety/safetyConfig");
 
 
+function buildGeographicSummary(
+  geographicContext
+) {
+  if (!geographicContext) {
+    return {
+      available: false,
+      status: "not_cached",
+      source: "openstreetmap-overpass",
+    };
+  }
+
+  return {
+    available:
+      geographicContext.available === true,
+
+    status:
+      geographicContext.status ||
+      "unknown",
+
+    source:
+      geographicContext.source ||
+      "openstreetmap-overpass",
+
+    samplePoints:
+      geographicContext.samplePoints ||
+      0,
+
+    searchRadius:
+      geographicContext.searchRadius ||
+      null,
+
+    roadSummary:
+      geographicContext.roadSummary || {
+        totalRoads: 0,
+
+        roadTypes: {
+          major: 0,
+          secondary: 0,
+          local: 0,
+          other: 0,
+          unknown: 0,
+        },
+
+        highwayTypes: {},
+
+        hasMajorRoads: false,
+        hasSecondaryRoads: false,
+        hasLocalRoads: false,
+      },
+
+    cache:
+      geographicContext.cache || {
+        hit: false,
+      },
+  };
+}
+
 function calculateSafety(
   route,
   allRoutes,
@@ -26,8 +83,7 @@ function calculateSafety(
       allRoutes
     );
 
-
-  const factors =
+  const factorResult =
     calculateRouteFactors(
       route,
       allRoutes,
@@ -35,12 +91,10 @@ function calculateSafety(
       geographicContext
     );
 
-
   const safetyResult =
     buildSafetyResult(
-      factors
+      factorResult.factors
     );
-
 
   return {
     ...safetyResult,
@@ -49,6 +103,9 @@ function calculateSafety(
 
     factorDetails:
       SAFETY_FACTORS,
+
+    geographicDetails:
+      factorResult.geographicDetails,
 
     geographicContext:
       geographicContext
@@ -73,14 +130,12 @@ function calculateSafety(
           }
         : {
             available: false,
-            status:
-              "not_cached",
+            status: "not_cached",
             source:
               "openstreetmap-overpass",
           },
   };
 }
-
 
 module.exports = {
   calculateSafety,
