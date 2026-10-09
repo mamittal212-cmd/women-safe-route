@@ -1478,3 +1478,52 @@ input {
   color: #7d8985;
   font-size: 10px;
 }
+.geographic-factor-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(99, 216, 148, 0.15);
+  border-radius: 9px;
+  background: rgba(8, 15, 13, 0.55);
+}
+
+.geographic-factor-details > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.geographic-factor-details span {
+  color: #8b9992;
+  font-size: 10px;
+}
+
+.geographic-factor-details strong {
+  color: #e1ebe5;
+  font-size: 13px;
+}
+
+.geographic-factor-details small {
+  grid-column: 1 / -1;
+  color: #8b9992;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 420px) {
+  .geographic-factor-details {
+    gap: 6px;
+    padding: 9px;
+  }
+
+  .geographic-factor-details span {
+    font-size: 9px;
+  }
+
+  .geographic-factor-details strong {
+    font-size: 12px;
+  }
+}

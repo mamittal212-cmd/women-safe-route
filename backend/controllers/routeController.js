@@ -168,11 +168,14 @@ async function calculateRoutes(
         safetyFactorDetails:
           safetyData.factorDetails,
 
-        routeContext:
-          safetyData.routeContext,
+       routeContext:
+  safetyData.routeContext,
 
-        geographicContext:
-          safetyData.geographicContext,
+geographicContext:
+  safetyData.geographicContext,
+
+geographicDetails:
+  safetyData.geographicDetails,
       });
     }
 

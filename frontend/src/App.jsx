@@ -10,8 +10,7 @@ import { getRoutes } from "./services/api";
 
 function App() {
   const [startLocation, setStartLocation] = useState(null);
-  const [destinationLocation, setDestinationLocation] =
-    useState(null);
+  const [destinationLocation, setDestinationLocation] = useState(null);
 
   const [routes, setRoutes] = useState([]);
   const [selectedRouteId, setSelectedRouteId] = useState(null);
@@ -24,19 +23,14 @@ function App() {
     setSelectedRouteId(null);
 
     if (!startLocation || !destinationLocation) {
-      setError(
-        "Please select both a starting location and a destination."
-      );
+      setError("Please select both a starting location and a destination.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const routeData = await getRoutes(
-        startLocation,
-        destinationLocation
-      );
+      const routeData = await getRoutes(startLocation, destinationLocation);
 
       setRoutes(routeData);
 
@@ -46,9 +40,7 @@ function App() {
     } catch (error) {
       console.error("Route calculation error:", error);
 
-      setError(
-        "Unable to calculate routes. Please try again."
-      );
+      setError("Unable to calculate routes. Please try again.");
 
       setRoutes([]);
     } finally {
@@ -60,9 +52,7 @@ function App() {
     if (routes.length === 0) return null;
 
     return routes.reduce((fastest, route) =>
-      route.duration < fastest.duration
-        ? route
-        : fastest
+      route.duration < fastest.duration ? route : fastest,
     );
   }
 
@@ -70,14 +60,12 @@ function App() {
     if (routes.length === 0) return null;
 
     return routes.reduce((safest, route) =>
-      route.safetyScore > safest.safetyScore
-        ? route
-        : safest
+      route.safetyScore > safest.safetyScore ? route : safest,
     );
   }
 
   function getBalancedRoute() {
-    if (routes.length === 0) return null; 
+    if (routes.length === 0) return null;
 
     const fastest = getFastestRoute();
     const safest = getSafestRoute();
@@ -88,37 +76,16 @@ function App() {
     let bestScore = -Infinity;
 
     routes.forEach((route) => {
-      const safetyDifference =
-        Math.abs(
-          route.safetyScore -
-            safest.safetyScore
-        );
+      const safetyDifference = Math.abs(route.safetyScore - safest.safetyScore);
 
-      const timeDifference =
-        Math.abs(
-          route.duration -
-            fastest.duration
-        );
+      const timeDifference = Math.abs(route.duration - fastest.duration);
 
       const normalizedSafety =
-        1 -
-        safetyDifference /
-          Math.max(
-            safest.safetyScore,
-            1
-          );
+        1 - safetyDifference / Math.max(safest.safetyScore, 1);
 
-      const normalizedTime =
-        1 -
-        timeDifference /
-          Math.max(
-            fastest.duration,
-            1
-          );
+      const normalizedTime = 1 - timeDifference / Math.max(fastest.duration, 1);
 
-      const balancedScore =
-        normalizedSafety * 0.6 +
-        normalizedTime * 0.4;
+      const balancedScore = normalizedSafety * 0.6 + normalizedTime * 0.4;
 
       if (balancedScore > bestScore) {
         bestScore = balancedScore;
@@ -177,17 +144,12 @@ function App() {
           <span>SafeRoute</span>
         </div>
 
-        <div className="version">
-          V1.0
-        </div>
+        <div className="version">V1.0</div>
       </header>
 
       <main className="main-content">
-
         <section className="hero">
-          <p className="eyebrow">
-            SAFETY-FIRST NAVIGATION
-          </p>
+          <p className="eyebrow">SAFETY-FIRST NAVIGATION</p>
 
           <h1>
             Travel smarter.
@@ -196,13 +158,12 @@ function App() {
           </h1>
 
           <p className="hero-description">
-            Find routes that prioritize safety instead
-            of simply getting you there faster.
+            Find routes that prioritize safety instead of simply getting you
+            there faster.
           </p>
         </section>
 
         <section className="route-panel">
-
           <LocationSearch
             label="FROM"
             placeholder="Enter starting location"
@@ -216,160 +177,100 @@ function App() {
             label="DESTINATION"
             placeholder="Enter destination"
             icon="destination"
-            onLocationSelect={
-              setDestinationLocation
-            }
+            onLocationSelect={setDestinationLocation}
           />
 
-         {error && (
-  <div className="route-error">
+          {error && (
+            <div className="route-error">
+              <div className="route-error-content">
+                <span className="route-error-icon">⚠️</span>
 
-    <div className="route-error-content">
-      <span className="route-error-icon">
-        ⚠️
-      </span>
+                <div>
+                  <strong>Unable to calculate route</strong>
 
-      <div>
-        <strong>
-          Unable to calculate route
-        </strong>
+                  <p>{error}</p>
+                </div>
+              </div>
 
-        <p>
-          {error}
-        </p>
-      </div>
-    </div>
-
-    <button
-      className="retry-button"
-      onClick={handleFindRoutes}
-    >
-      Try Again
-    </button>
-
-  </div>
-)}
+              <button className="retry-button" onClick={handleFindRoutes}>
+                Try Again
+              </button>
+            </div>
+          )}
 
           <button
             className="route-button"
             onClick={handleFindRoutes}
             disabled={loading}
           >
-            {loading
-              ? "Calculating routes..."
-              : "🛡️ Find Safe Routes"}
+            {loading ? "Calculating routes..." : "🛡️ Find Safe Routes"}
           </button>
-
         </section>
 
         <section className="map-container">
+          <MapView
+            routes={routes}
+            startLocation={startLocation}
+            destinationLocation={destinationLocation}
+            selectedRouteId={selectedRouteId}
+            onRouteSelect={setSelectedRouteId}
+          />
 
-  <MapView
-    routes={routes}
-    startLocation={startLocation}
-    destinationLocation={destinationLocation}
-    selectedRouteId={selectedRouteId}
-    onRouteSelect={setSelectedRouteId}
-  />
+          {!startLocation && !destinationLocation && (
+            <div className="map-overlay">
+              <div className="map-overlay-icon">🗺️</div>
 
-  {!startLocation && !destinationLocation && (
-    <div className="map-overlay">
-      <div className="map-overlay-icon">
-        🗺️
-      </div>
+              <h3>Plan your journey</h3>
 
-      <h3>
-        Plan your journey
-      </h3>
+              <p>
+                Enter your starting location and destination to find safer route
+                options.
+              </p>
+            </div>
+          )}
 
-      <p>
-        Enter your starting location and
-        destination to find safer route options.
-      </p>
-    </div>
-  )}
+          {loading && (
+            <div className="map-overlay loading-overlay">
+              <div className="loading-spinner"></div>
 
-  {loading && (
-    <div className="map-overlay loading-overlay">
+              <h3>Finding routes</h3>
 
-      <div className="loading-spinner"></div>
-
-      <h3>
-        Finding routes
-      </h3>
-
-      <p>
-        Comparing available routes...
-      </p>
-
-    </div>
-  )}
-
-</section>
+              <p>Comparing available routes...</p>
+            </div>
+          )}
+        </section>
 
         {routes.length > 0 && (
           <section className="route-results">
-
             <div className="results-header">
               <div>
-                <p className="results-eyebrow">
-                  ROUTE OPTIONS
-                </p>
+                <p className="results-eyebrow">ROUTE OPTIONS</p>
 
-                <h2>
-                  Choose your route
-                </h2>
+                <h2>Choose your route</h2>
               </div>
 
-              <span className="route-count">
-                {routes.length} routes found
-              </span>
+              <span className="route-count">{routes.length} routes found</span>
             </div>
 
             <div className="route-cards">
-
               {routes.map((route) => {
+                const distanceKm = (route.distance / 1000).toFixed(2);
 
-                const distanceKm =
-                  (
-                    route.distance / 1000
-                  ).toFixed(2);
+                const durationMinutes = Math.round(route.duration / 60);
 
-                const durationMinutes =
-                  Math.round(
-                    route.duration / 60
-                  );
+                const routeType = getRouteType(route);
 
-                const routeType =
-                  getRouteType(route);
-
-                const isSelected =
-                  selectedRouteId ===
-                  route.id;
+                const isSelected = selectedRouteId === route.id;
 
                 return (
                   <div
-                    className={`route-card ${
-                      isSelected
-                        ? "selected"
-                        : ""
-                    }`}
+                    className={`route-card ${isSelected ? "selected" : ""}`}
                     key={route.id}
-                    onClick={() =>
-                      setSelectedRouteId(
-                        route.id
-                      )
-                    }
+                    onClick={() => setSelectedRouteId(route.id)}
                   >
-
                     <div className="route-card-header">
-
                       <div>
-                        <h3>
-                          {getRouteTitle(
-                            route
-                          )}
-                        </h3>
+                        <h3>{getRouteTitle(route)}</h3>
 
                         <span className="route-badge">
                           {routeType.toUpperCase()}
@@ -377,112 +278,103 @@ function App() {
                       </div>
 
                       {isSelected && (
-                        <span className="selected-badge">
-                          SELECTED
-                        </span>
+                        <span className="selected-badge">SELECTED</span>
                       )}
-
                     </div>
 
                     <SafetyScore
-  score={route.safetyScore}
-  confidence={route.safetyConfidence}
-/>
-{route.geographicContext && (
-  <div className="geographic-context">
-    <div className="geographic-context-header">
-      <span>🌍 Geographic Context</span>
+                      score={route.safetyScore}
+                      confidence={route.safetyConfidence}
+                    />
+                    {route.geographicContext && (
+                      <div className="geographic-context">
+                        <div className="geographic-context-header">
+                          <span>🌍 Geographic Context</span>
 
-      <span
-        className={
-          route.geographicContext.available
-            ? "context-status available"
-            : "context-status unavailable"
-        }
-      >
-        {route.geographicContext.available
-          ? "AVAILABLE"
-          : "UNAVAILABLE"}
-      </span>
-    </div>
+                          <span
+                            className={
+                              route.geographicContext.available ?
+                                "context-status available"
+                              : "context-status unavailable"
+                            }
+                          >
+                            {route.geographicContext.available ?
+                              "AVAILABLE"
+                            : "UNAVAILABLE"}
+                          </span>
+                        </div>
 
-    {route.geographicContext.available ? (
-      <>
-        <p className="geographic-context-source">
-          Road characteristics from OpenStreetMap
-        </p>
+                        {route.geographicContext.available ?
+                          <>
+                            <p className="geographic-context-source">
+                              Road characteristics from OpenStreetMap
+                            </p>
 
-        <div className="road-context-grid">
-          <div>
-            <strong>
-              {route.geographicContext.roadSummary.roadTypes.major}
-            </strong>
-            <span>Major</span>
-          </div>
+                            <div className="road-context-grid">
+                              <div>
+                                <strong>
+                                  {
+                                    route.geographicContext.roadSummary
+                                      .roadTypes.major
+                                  }
+                                </strong>
+                                <span>Major</span>
+                              </div>
 
-          <div>
-            <strong>
-              {route.geographicContext.roadSummary.roadTypes.secondary}
-            </strong>
-            <span>Secondary</span>
-          </div>
+                              <div>
+                                <strong>
+                                  {
+                                    route.geographicContext.roadSummary
+                                      .roadTypes.secondary
+                                  }
+                                </strong>
+                                <span>Secondary</span>
+                              </div>
 
-          <div>
-            <strong>
-              {route.geographicContext.roadSummary.roadTypes.local}
-            </strong>
-            <span>Local</span>
-          </div>
-        </div>
-      </>
-    ) : (
-      <p className="geographic-context-message">
-        Geographic road context is temporarily unavailable.
-        The route calculation does not depend on this data.
-      </p>
-    )}
-  </div>
-)}
+                              <div>
+                                <strong>
+                                  {
+                                    route.geographicContext.roadSummary
+                                      .roadTypes.local
+                                  }
+                                </strong>
+                                <span>Local</span>
+                              </div>
+                            </div>
+                          </>
+                        : <p className="geographic-context-message">
+                            Geographic road context is temporarily unavailable.
+                            The route calculation does not depend on this data.
+                          </p>
+                        }
+                      </div>
+                    )}
 
                     <div className="route-stats">
-
                       <div>
-                        <strong>
-                          {distanceKm} km
-                        </strong>
+                        <strong>{distanceKm} km</strong>
 
-                        <small>
-                          Distance
-                        </small>
+                        <small>Distance</small>
                       </div>
 
                       <div>
-                        <strong>
-                          {durationMinutes} min
-                        </strong>
+                        <strong>{durationMinutes} min</strong>
 
-                        <small>
-                          Estimated time
-                        </small>
+                        <small>Estimated time</small>
                       </div>
-
                     </div>
 
-                    <SafetyBreakdown
+  <SafetyBreakdown
   breakdown={route.safetyBreakdown}
-  factorDetails={
-    route.safetyFactorDetails
-  }
+  factorDetails={route.safetyFactorDetails}
+  geographicDetails={route.geographicDetails}
 />
-
                   </div>
                 );
               })}
-
             </div>
           </section>
         )}
-
       </main>
     </div>
   );
