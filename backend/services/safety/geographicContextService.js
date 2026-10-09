@@ -1,10 +1,10 @@
 const OVERPASS_URL =
   "https://overpass-api.de/api/interpreter";
 
-const SAMPLE_LIMIT = 20;
+const SAMPLE_LIMIT = 10;
 const SEARCH_RADIUS = 15;
 
-const OVERPASS_TIMEOUT = 5000;
+const OVERPASS_TIMEOUT = 8000;
 
 // Successful geographic results stay cached
 // for 10 minutes.
@@ -81,7 +81,7 @@ function buildOverpassQuery(
       .join(",");
 
   return `
-[out:json][timeout:5];
+[out:json][timeout:8];
 
 way
   [highway]
@@ -386,6 +386,25 @@ async function getGeographicContext(
       buildRoadSummary(
         elements
       );
+      if (roadSummary.totalRoads === 0) {
+  const result = getUnavailableContext(
+    "No road classification data returned.",
+    coordinates.length
+  );
+
+  geographicCache.set(cacheKey, {
+    data: result,
+    timestamp: Date.now(),
+    ttl: FAILURE_CACHE_TTL,
+  });
+
+  return {
+    ...result,
+    cache: {
+      hit: false,
+    },
+  };
+}
 
     const result = {
       available: true,
