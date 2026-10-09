@@ -2,6 +2,7 @@ function clampScore(score) {
   return Math.max(0, Math.min(100, Math.round(score)));
 }
 
+
 function calculateRoadContextAdjustment(geographicContext) {
   if (
     !geographicContext ||
@@ -17,7 +18,7 @@ function calculateRoadContextAdjustment(geographicContext) {
   const roadTypes =
     geographicContext.roadSummary?.roadTypes;
 
-  if (!roadTypes) {
+  if (!roadTypes || typeof roadTypes !== "object") {
     return {
       available: false,
       adjustment: 0,
@@ -25,8 +26,31 @@ function calculateRoadContextAdjustment(geographicContext) {
     };
   }
 
-  const total = Object.values(roadTypes).reduce(
-    (sum, value) => sum + value,
+  const requiredTypes = [
+    "major",
+    "secondary",
+    "local",
+    "other",
+    "unknown",
+  ];
+
+  const hasInvalidCounts = requiredTypes.some(
+    (type) =>
+      typeof roadTypes[type] !== "number" ||
+      !Number.isFinite(roadTypes[type]) ||
+      roadTypes[type] < 0
+  );
+
+  if (hasInvalidCounts) {
+    return {
+      available: false,
+      adjustment: 0,
+      reason: "Invalid road classification counts.",
+    };
+  }
+
+  const total = requiredTypes.reduce(
+    (sum, type) => sum + roadTypes[type],
     0
   );
 
@@ -49,17 +73,12 @@ function calculateRoadContextAdjustment(geographicContext) {
 
   return {
     available: true,
-
-    adjustment: Number(
-      adjustment.toFixed(2)
-    ),
-
+    adjustment: Number(adjustment.toFixed(2)),
     roadRatios: {
       major: Number(majorRatio.toFixed(3)),
       secondary: Number(secondaryRatio.toFixed(3)),
       local: Number(localRatio.toFixed(3)),
     },
-
     roadCounts: {
       major: roadTypes.major,
       secondary: roadTypes.secondary,
@@ -67,12 +86,12 @@ function calculateRoadContextAdjustment(geographicContext) {
       other: roadTypes.other,
       unknown: roadTypes.unknown,
     },
-
     source:
       geographicContext.source ||
       "openstreetmap-overpass",
   };
 }
+
 
 
 function calculateGeographicRoadSafety(
